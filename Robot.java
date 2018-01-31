@@ -19,7 +19,7 @@ class Robot {
       System.out.println(name + " says " + phrase);
       powerLevel -= 1.0f;
     } else {
-      System.out.println(name + " is too weak to talk.");
+      System.out.println(name + " is too weak to talk Wrectangle was here.");
     }
   }
 
