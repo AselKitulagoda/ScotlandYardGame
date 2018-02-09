@@ -5,10 +5,7 @@ public class Zoo {
   }
 
   public String feed(Animal animal, Food food) {
-    return food.eaten(animal);
+    return animal.eat(food);
   }
 
-  public String feed(Dog dog, Food food) {
-    return food.eaten(dog);
-  }
 }

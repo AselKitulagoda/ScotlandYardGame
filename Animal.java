@@ -1,8 +1,8 @@
-public class Dog extends Animal {
+public class Animal {
 
-  @Override
   public String eat(Food food) {
     return food.eaten(this);
   }
+
 
 }
