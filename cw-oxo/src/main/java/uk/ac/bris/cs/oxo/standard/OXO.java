@@ -21,7 +21,7 @@ public class OXO implements OXOGame {
 
 	private Player noughtSide, crossSide;
 	private Side currentSide;
-	private int size, startSize;
+	private int size;
 	private SquareMatrix<Cell> matrix;
 
 	public OXO(int size, Side startSide, Player noughtSide, Player crossSide) {
@@ -32,7 +32,8 @@ public class OXO implements OXOGame {
 
 		this.noughtSide = requireNonNull(noughtSide);
 		this.crossSide = requireNonNull(crossSide);
-		this.startSize = requireNonNull(startSize);
+		this.currentSide = requireNonNull(currentSide);
+		startSide = currentSide;
 		this.matrix = new SquareMatrix<Cell>(size, new Cell());
 	}
 
