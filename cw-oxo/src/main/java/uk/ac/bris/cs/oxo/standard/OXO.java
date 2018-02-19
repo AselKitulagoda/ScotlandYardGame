@@ -32,8 +32,7 @@ public class OXO implements OXOGame {
 
 		this.noughtSide = requireNonNull(noughtSide);
 		this.crossSide = requireNonNull(crossSide);
-		this.currentSide = requireNonNull(currentSide);
-		startSide = currentSide;
+		this.currentSide = requireNonNull(startSide);
 		this.matrix = new SquareMatrix<Cell>(size, new Cell());
 	}
 
@@ -62,7 +61,6 @@ public class OXO implements OXOGame {
 
 	@Override
 	public Side currentSide() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return currentSide;
 	}
 }
