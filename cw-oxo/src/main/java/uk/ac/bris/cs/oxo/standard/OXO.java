@@ -17,7 +17,7 @@ import uk.ac.bris.cs.oxo.Player;
 import uk.ac.bris.cs.oxo.Side;
 import uk.ac.bris.cs.oxo.Spectator;
 
-public class OXO implements OXOGame {
+public class OXO implements OXOGame, Consumer<Move> {
 
 	private Player noughtSide, crossSide;
 	private Side currentSide;
@@ -34,6 +34,12 @@ public class OXO implements OXOGame {
 		this.crossSide = requireNonNull(crossSide);
 		this.currentSide = requireNonNull(startSide);
 		this.matrix = new SquareMatrix<Cell>(size, new Cell());
+
+	}
+
+	@Override
+	public void accept(Move move) {
+
 	}
 
 	@Override
@@ -48,10 +54,21 @@ public class OXO implements OXOGame {
 		throw new RuntimeException("Implement me");
 	}
 
+	private Set<Move> validMoves() {
+		Set<Move> moves = new HashSet<>();
+		for(int row = 0; row < matrix.rowSize(); row++) {
+			for(int col = 0; col < matrix.columnSize(); col++) {
+				while(matrix == null)
+					moves.add(new Move(row, col));
+			}
+		}
+		return moves;
+	}
+
 	@Override
 	public void start() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		Player player = (currentSide == Side.CROSS) ? crossSide : noughtSide;
+		player.makeMove(this, validMoves(), this.callback);
 	}
 
 	@Override
