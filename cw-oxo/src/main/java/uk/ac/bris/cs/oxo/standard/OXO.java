@@ -34,12 +34,6 @@ public class OXO implements OXOGame, Consumer<Move> {
 		this.crossSide = requireNonNull(crossSide);
 		this.currentSide = requireNonNull(startSide);
 		this.matrix = new SquareMatrix<Cell>(size, new Cell());
-
-	}
-
-	@Override
-	public void accept(Move move) {
-
 	}
 
 	@Override
@@ -58,11 +52,20 @@ public class OXO implements OXOGame, Consumer<Move> {
 		Set<Move> moves = new HashSet<>();
 		for(int row = 0; row < matrix.rowSize(); row++) {
 			for(int col = 0; col < matrix.columnSize(); col++) {
-				while(matrix == null)
+				if(matrix.get(row, col).isEmpty())
 					moves.add(new Move(row, col));
 			}
 		}
 		return moves;
+	}
+
+	@Override
+	public void accept(Move move) {
+		if (validMoves().contains(move)){
+			
+		}
+		else
+			throw new IllegalArgumentException("Move does not exist!");
 	}
 
 	@Override
