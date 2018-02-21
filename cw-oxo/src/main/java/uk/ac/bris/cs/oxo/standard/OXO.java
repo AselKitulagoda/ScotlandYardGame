@@ -23,6 +23,7 @@ public class OXO implements OXOGame, Consumer<Move> {
 	private Side currentSide;
 	private int size;
 	private Consumer<Move> callback;
+	private final List<Spectator> spectators = new CopyOnWriteArrayList<>();
 	private final SquareMatrix<Cell> matrix;
 
 	public OXO(int size, Side startSide, Player noughtSide, Player crossSide) {
@@ -39,14 +40,12 @@ public class OXO implements OXOGame, Consumer<Move> {
 
 	@Override
 	public void registerSpectators(Spectator... spectators) {
-		// TODO
-		throw new RuntimeException("Implement me");
+		this.spectators.addAll(Arrays.asList(spectators));
 	}
 
 	@Override
 	public void unregisterSpectators(Spectator... spectators) {
-		// TODO
-		throw new RuntimeException("Implement me");
+		this.spectators.removeAll(Arrays.asList(spectators));
 	}
 
 	private Set<Move> validMoves() {
@@ -64,6 +63,10 @@ public class OXO implements OXOGame, Consumer<Move> {
 	public void accept(Move move) {
 		if (validMoves().contains(move)){
 			matrix.put(move.row, move.column, new Cell(currentSide));
+			for(Spectator spec : spectators){
+				spec.moveMade(currentSide, move);
+				if(validMoves().isEmpty() || )
+			}
 			currentSide = currentSide.other();
 			start();
 		} else throw new IllegalArgumentException("Move does not exist!");
