@@ -367,7 +367,7 @@ public class OXOTest {
 
 	/**
 	 * Attempts to select an arbitrary move
-	 * 
+	 *
 	 * @param move the move to select
 	 * @return an answer; never null
 	 */
@@ -383,7 +383,7 @@ public class OXOTest {
 
 	/**
 	 * Attempts to select a move from a set of provided moves
-	 * 
+	 *
 	 * @param consumer the callback to handle moves
 	 * @return an answer for mockito; never null
 	 */

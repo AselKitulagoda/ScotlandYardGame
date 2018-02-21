@@ -22,6 +22,7 @@ public class OXO implements OXOGame, Consumer<Move> {
 	private Player noughtSide, crossSide;
 	private Side currentSide;
 	private int size;
+	private Consumer<Move> callback;
 	private final SquareMatrix<Cell> matrix;
 
 	public OXO(int size, Side startSide, Player noughtSide, Player crossSide) {
@@ -62,16 +63,16 @@ public class OXO implements OXOGame, Consumer<Move> {
 	@Override
 	public void accept(Move move) {
 		if (validMoves().contains(move)){
-			
-		}
-		else
-			throw new IllegalArgumentException("Move does not exist!");
+			matrix.put(move.row, move.column, new Cell(currentSide));
+			currentSide = currentSide.other();
+			start();
+		} else throw new IllegalArgumentException("Move does not exist!");
 	}
 
 	@Override
 	public void start() {
 		Player player = (currentSide == Side.CROSS) ? crossSide : noughtSide;
-		player.makeMove(this, validMoves(), this.callback);
+		player.makeMove(this, validMoves(), this);
 	}
 
 	@Override
