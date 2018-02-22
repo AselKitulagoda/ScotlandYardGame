@@ -57,26 +57,44 @@ public class OXO implements OXOGame, Consumer<Move> {
 		return moves;
 	}
 
-	public boolean line(Side side){
-		for(int i = 0; i < matrix.rowSize(); i++){
-			if((matrix.row(i)).equals(matrix.row(i+1))) return true;
-			else if((matrix.column(i)).equals(matrix.column(i+1))) return true;
+	public boolean win(Side side, List<Cell> cell){
+		for(Cell x : cell) {
+			if(!x.sameSideAs(side)){
+				return false;
+			}
 		}
-		return false;
+		return true;
 	}
+
+	public boolean line(Side side){
+		boolean check = true;
+		for(int i = 0; i < matrix.rowSize(); i++){
+			if(win(side, matrix.row(i))) return true;
+			else if(win(side, matrix.column(i))) return true;
+			}
+			if(win(side, matrix.mainDiagonal())) return true;
+			else if(win(side, matrix.antiDiagonal())) return true;
+			else return false;
+		}
 
 	@Override
 	public void accept(Move move) {
-		if (validMoves().contains(move)){
+		if (validMoves().contains(move)) {
 			matrix.put(move.row, move.column, new Cell(currentSide));
-			for(Spectator spec : spectators){
+
+			for (Spectator spec : spectators) {
 				spec.moveMade(currentSide, move);
 			}
-			if(validMoves().isEmpty()) finish(new Outcome());
-			else if(line(currentSide) == true) finish(new Outcome(currentSide));
-			currentSide = currentSide.other();
-			start();
-		} else throw new IllegalArgumentException("Move does not exist!");
+
+			if (line(currentSide))
+				finish(new Outcome(currentSide));
+			else if (validMoves().isEmpty())
+				finish(new Outcome());
+			else {
+				currentSide = currentSide.other();
+				start(); }
+		} else
+				throw new IllegalArgumentException("Move does not exist!");
 	}
 
 	public void finish(Outcome outcome) {
