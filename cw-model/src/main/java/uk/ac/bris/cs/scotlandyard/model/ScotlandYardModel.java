@@ -40,6 +40,30 @@ public class ScotlandYardModel implements ScotlandYardGame {
 		if(rounds.isEmpty()) throw new IllegalArgumentException("Empty rounds!");
 		if(graph.isEmpty()) throw new IllegalArgumentException("Empty graph!");
 		if(mrX.colour != BLACK) throw new IllegalArgumentException("Mr. X should be black!");
+
+		//Putting the player configurations in a temporary list and check on a loop
+		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
+		for(PlayerConfiguration player : restOfTheDetectives){
+			configurations.add(requireNonNull(player));
+		}
+		configurations.add(0, firstDetective);
+		configurations.add(0, mrX);
+
+		//Checking duplicate locations
+		Set<Integer> locationSet = new HashSet<>();
+		for(PlayerConfiguration player : configurations){
+			if(locationSset.contains(player.location))
+				throw new IllegalArgumentException("Duplicate location!");
+			locationSet.add(player.location);
+		}
+
+		//Checking duplicate colours
+		Set<Colour> colourSet = new HashSet<>();
+		for(PlayerConfiguration player : configurations){
+			if(colourSet.contains(player.colour))
+				throw new IllegalArgumentException("Duplicate colour!");
+			colourSet.add(player.colour);
+		}
 	}
 
 	@Override
