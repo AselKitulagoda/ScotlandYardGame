@@ -52,7 +52,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 		//Checking duplicate locations
 		Set<Integer> locationSet = new HashSet<>();
 		for(PlayerConfiguration player : configurations){
-			if(locationSset.contains(player.location))
+			if(locationSet.contains(player.location))
 				throw new IllegalArgumentException("Duplicate location!");
 			locationSet.add(player.location);
 		}
@@ -64,6 +64,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				throw new IllegalArgumentException("Duplicate colour!");
 			colourSet.add(player.colour);
 		}
+
 	}
 
 	@Override
@@ -92,8 +93,8 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Colour> getPlayers() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		ArrayList<ScotlandYardPlayer> player = new ArrayList<>;
+		for(ScotlandYardPlayer x : Gotm)
 	}
 
 	@Override
@@ -134,14 +135,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Boolean> getRounds() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return Collections.unmodifiableList(rounds);
 	}
 
 	@Override
 	public Graph<Integer, Transport> getGraph() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return new ImmutableGraph<>(graph);
 	}
 
 }
