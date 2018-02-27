@@ -67,7 +67,6 @@ public class OXO implements OXOGame, Consumer<Move> {
 	}
 
 	public boolean line(Side side){
-		boolean check = true;
 		for(int i = 0; i < matrix.rowSize(); i++){
 			if(win(side, matrix.row(i))) return true;
 			else if(win(side, matrix.column(i))) return true;
