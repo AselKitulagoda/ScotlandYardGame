@@ -93,8 +93,8 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Colour> getPlayers() {
-		ArrayList<ScotlandYardPlayer> player = new ArrayList<>;
-		for(ScotlandYardPlayer x : Gotm)
+		// TODO
+		throw new RuntimeException("Implement me");
 	}
 
 	@Override
