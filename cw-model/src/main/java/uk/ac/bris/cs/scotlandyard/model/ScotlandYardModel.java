@@ -61,21 +61,32 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				throw new IllegalArgumentException("Duplicate colour!");
 			colourSet.add(player.colour);
 		}
-		tix(firstDetective, mrX);
+		checkTickets(firstDetective, mrX);
 	}
 
-	public void tix(PlayerConfiguration firstDetective, PlayerConfiguration mrX){
+	public void checkTickets(PlayerConfiguration firstDetective, PlayerConfiguration mrX,
+							 PlayerConfiguration... restOfTheDetectives){
 
 		List<PlayerConfiguration> detectives = new ArrayList<>();
-		for(PlayerConfiguration rest : detectives){
-			if(rest.tickets.containsKey(SECRET) || rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) ||
-					!rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
-				throw new IllegalArgumentException("Detectives cannot use this ticket");
-		}
-		detectives.add(0, firstDetective);
 
-		if(!mrX.tickets.containsKey(TAXI) || !mrX.tickets.containsKey(BUS) || !mrX.tickets.containsKey(UNDERGROUND) ||
-				!mrX.tickets.containsKey(SECRET) || !mrX.tickets.containsKey(DOUBLE))
+		if(!firstDetective.tickets.containsKey(SECRET) || !firstDetective.tickets.containsKey(DOUBLE) || !firstDetective.tickets.containsKey(TAXI) || !firstDetective.tickets.containsKey(UNDERGROUND) || !firstDetective.tickets.containsKey(BUS))
+			throw new IllegalArgumentException("error");
+
+		if(firstDetective.tickets.get(SECRET) != 0 || firstDetective.tickets.get(DOUBLE) != 0 )
+			throw new IllegalArgumentException("error!");
+
+		for(PlayerConfiguration rest : restOfTheDetectives){
+
+			detectives.add(requireNonNull(rest));
+
+			if(!rest.tickets.containsKey(SECRET) || !rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) || !rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
+				throw new IllegalArgumentException("error");
+
+			if(rest.tickets.get(SECRET) != 0 || rest.tickets.get(DOUBLE) != 0 )
+				throw new IllegalArgumentException("error!");
+		}
+
+		if(!mrX.tickets.containsKey(TAXI) || !mrX.tickets.containsKey(BUS) || !mrX.tickets.containsKey(UNDERGROUND) || !mrX.tickets.containsKey(SECRET) || !mrX.tickets.containsKey(DOUBLE))
 			throw new IllegalArgumentException("MrX must have all tickets");
 	}
 
@@ -111,7 +122,6 @@ public class ScotlandYardModel implements ScotlandYardGame {
 			colours.add(player.colour());
 
 		return Collections.unmodifiableList(colours);
-		//throw new RuntimeException("Implement me");
 	}
 
 	@Override
