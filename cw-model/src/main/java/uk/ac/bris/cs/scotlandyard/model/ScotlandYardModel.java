@@ -8,15 +8,10 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 import static uk.ac.bris.cs.scotlandyard.model.Colour.BLACK;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.DOUBLE;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.SECRET;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import static uk.ac.bris.cs.scotlandyard.model.Ticket.*;
+
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import uk.ac.bris.cs.gamekit.graph.Edge;
 import uk.ac.bris.cs.gamekit.graph.Graph;
@@ -29,6 +24,8 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
+	private List<ScotlandYardPlayer> players = new ArrayList<>();
+	private Map<Ticket, Integer> tickets;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -64,7 +61,22 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				throw new IllegalArgumentException("Duplicate colour!");
 			colourSet.add(player.colour);
 		}
+		tix(firstDetective, mrX);
+	}
 
+	public void tix(PlayerConfiguration firstDetective, PlayerConfiguration mrX){
+
+		List<PlayerConfiguration> detectives = new ArrayList<>();
+		for(PlayerConfiguration rest : detectives){
+			if(rest.tickets.containsKey(SECRET) || rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) ||
+					!rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
+				throw new IllegalArgumentException("Detectives cannot use this ticket");
+		}
+		detectives.add(0, firstDetective);
+
+		if(!mrX.tickets.containsKey(TAXI) || !mrX.tickets.containsKey(BUS) || !mrX.tickets.containsKey(UNDERGROUND) ||
+				!mrX.tickets.containsKey(SECRET) || !mrX.tickets.containsKey(DOUBLE))
+			throw new IllegalArgumentException("MrX must have all tickets");
 	}
 
 	@Override
@@ -93,8 +105,13 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Colour> getPlayers() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		List<Colour> colours = new ArrayList<>();
+
+		for(ScotlandYardPlayer player : players)
+			colours.add(player.colour());
+
+		return Collections.unmodifiableList(colours);
+		//throw new RuntimeException("Implement me");
 	}
 
 	@Override
