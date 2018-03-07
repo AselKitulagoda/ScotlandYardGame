@@ -8,6 +8,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 import static uk.ac.bris.cs.scotlandyard.model.Colour.BLACK;
+import static uk.ac.bris.cs.scotlandyard.model.Colour.YELLOW;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.*;
 
 import java.util.*;
@@ -25,7 +26,8 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
-	private Map<Ticket, Integer> tickets;
+	private int currentPlayer = 0;
+
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -40,11 +42,15 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 		//Putting the player configurations in a temporary list and check on a loop
 		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
-		for(PlayerConfiguration player : restOfTheDetectives){
+		for(PlayerConfiguration player : restOfTheDetectives)
 			configurations.add(requireNonNull(player));
-		}
 		configurations.add(0, firstDetective);
 		configurations.add(0, mrX);
+
+		//Adding the players to the ScotlandYardPlayer list from the PlayerConfiguration list
+		for(PlayerConfiguration x : configurations){
+			players.add(new ScotlandYardPlayer(x.player, x.colour, x.location, x.tickets));
+		}
 
 		//Checking duplicate locations
 		Set<Integer> locationSet = new HashSet<>();
@@ -64,27 +70,26 @@ public class ScotlandYardModel implements ScotlandYardGame {
 		checkTickets(firstDetective, mrX);
 	}
 
-	public void checkTickets(PlayerConfiguration firstDetective, PlayerConfiguration mrX,
-							 PlayerConfiguration... restOfTheDetectives){
-
+	//Method to check whether all ticket types exist and assigning respective tickets to players
+	public void checkTickets(PlayerConfiguration firstDetective, PlayerConfiguration mrX, PlayerConfiguration... restOfTheDetectives){
 		List<PlayerConfiguration> detectives = new ArrayList<>();
 
-		if(!firstDetective.tickets.containsKey(SECRET) || !firstDetective.tickets.containsKey(DOUBLE) || !firstDetective.tickets.containsKey(TAXI) || !firstDetective.tickets.containsKey(UNDERGROUND) || !firstDetective.tickets.containsKey(BUS))
-			throw new IllegalArgumentException("error");
-
-		if(firstDetective.tickets.get(SECRET) != 0 || firstDetective.tickets.get(DOUBLE) != 0 )
-			throw new IllegalArgumentException("error!");
-
-		for(PlayerConfiguration rest : restOfTheDetectives){
-
-			detectives.add(requireNonNull(rest));
-
-			if(!rest.tickets.containsKey(SECRET) || !rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) || !rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
+			if(!firstDetective.tickets.containsKey(SECRET) || !firstDetective.tickets.containsKey(DOUBLE) || !firstDetective.tickets.containsKey(TAXI) || !firstDetective.tickets.containsKey(UNDERGROUND) || !firstDetective.tickets.containsKey(BUS))
 				throw new IllegalArgumentException("error");
 
-			if(rest.tickets.get(SECRET) != 0 || rest.tickets.get(DOUBLE) != 0 )
+			if(firstDetective.tickets.get(SECRET) != 0 || firstDetective.tickets.get(DOUBLE) != 0 )
 				throw new IllegalArgumentException("error!");
-		}
+
+			for(PlayerConfiguration rest : restOfTheDetectives){
+
+				detectives.add(requireNonNull(rest));
+
+				if(!rest.tickets.containsKey(SECRET) || !rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) || !rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
+					throw new IllegalArgumentException("error");
+
+				if(rest.tickets.get(SECRET) != 0 || rest.tickets.get(DOUBLE) != 0 )
+					throw new IllegalArgumentException("error!");
+			}
 
 		if(!mrX.tickets.containsKey(TAXI) || !mrX.tickets.containsKey(BUS) || !mrX.tickets.containsKey(UNDERGROUND) || !mrX.tickets.containsKey(SECRET) || !mrX.tickets.containsKey(DOUBLE))
 			throw new IllegalArgumentException("MrX must have all tickets");
@@ -116,11 +121,11 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Colour> getPlayers() {
+
 		List<Colour> colours = new ArrayList<>();
-
-		for(ScotlandYardPlayer player : players)
+		for(ScotlandYardPlayer player : players) {
 			colours.add(player.colour());
-
+		}
 		return Collections.unmodifiableList(colours);
 	}
 
