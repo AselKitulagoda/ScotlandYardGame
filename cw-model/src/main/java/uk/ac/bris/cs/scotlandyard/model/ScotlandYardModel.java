@@ -28,7 +28,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
-	private int temp = 0;
+	private int currentIndex = 0;
 	private Colour currentPlayer;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
 
@@ -140,7 +140,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Optional<Integer> getPlayerLocation(Colour colour) {
-			/*for(ScotlandYardPlayer player : players) {
+			for(ScotlandYardPlayer player : players) {
 				if (colour == player.colour()) {
 					if (rounds.get(getCurrentRound()) && player.isMrX())
 						return Optional.of(player.location());
@@ -151,17 +151,19 @@ public class ScotlandYardModel implements ScotlandYardGame {
 					else if (!rounds.get(getCurrentRound()) && player.isDetective())
 						return Optional.of(player.location());
 				}
-				else
-					return Optional.empty();
-			} */
-		// TODO
-		throw new RuntimeException("Implement me");
+			}
+			return Optional.empty();
 	}
 
 	@Override
 	public Optional<Integer> getPlayerTickets(Colour colour, Ticket ticket) {
-		// TODO
-		throw new RuntimeException("Implement me");
+		for(ScotlandYardPlayer player : players){
+			if(colour == player.colour()){
+				if(player.tickets().containsKey(ticket))
+					return Optional.of(player.tickets().get(ticket));
+			}
+		}
+		return Optional.empty();
 	}
 
 	@Override
@@ -172,9 +174,9 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	@Override
 	public Colour getCurrentPlayer() {
 		List<Colour> x = getPlayers();
-		for(int i = temp; i < x.size(); i++) {
-			if(temp == players.size() + 1) temp = 0;
-			temp++;
+		for(int i = currentIndex; i < x.size(); i++) {
+			if(currentIndex == players.size() + 1) currentIndex = 0;
+			currentIndex++;
 			currentPlayer = x.get(i);
 			break;
 		}
