@@ -20,14 +20,17 @@ import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
 
 import uk.ac.bris.cs.gamekit.graph.Graph;
 
+import javax.swing.text.html.Option;
+
 // TODO implement all methods and pass all tests
 public class ScotlandYardModel implements ScotlandYardGame {
 
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
-	private int currentPlayer = 0;
-
+	private int temp = 0;
+	private Colour currentPlayer;
+	private int currentRound = ScotlandYardView.NOT_STARTED;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -137,6 +140,20 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Optional<Integer> getPlayerLocation(Colour colour) {
+			/*for(ScotlandYardPlayer player : players) {
+				if (colour == player.colour()) {
+					if (rounds.get(getCurrentRound()) && player.isMrX())
+						return Optional.of(player.location());
+					else if(!rounds.get(getCurrentRound()) && player.isMrX())
+						return Optional.of(0);
+					else if(rounds.get(getCurrentRound()) && player.isDetective())
+						return Optional.of(0);
+					else if (!rounds.get(getCurrentRound()) && player.isDetective())
+						return Optional.of(player.location());
+				}
+				else
+					return Optional.empty();
+			} */
 		// TODO
 		throw new RuntimeException("Implement me");
 	}
@@ -149,20 +166,24 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public boolean isGameOver() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return false;
 	}
 
 	@Override
 	public Colour getCurrentPlayer() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		List<Colour> x = getPlayers();
+		for(int i = temp; i < x.size(); i++) {
+			if(temp == players.size() + 1) temp = 0;
+			temp++;
+			currentPlayer = x.get(i);
+			break;
+		}
+		return currentPlayer;
 	}
 
 	@Override
 	public int getCurrentRound() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return currentRound;
 	}
 
 	@Override
