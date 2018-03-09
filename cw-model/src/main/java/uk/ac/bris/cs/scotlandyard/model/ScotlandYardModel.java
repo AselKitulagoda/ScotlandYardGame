@@ -134,8 +134,8 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Set<Colour> getWinningPlayers() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		Set<Colour> winner = new HashSet<>();
+		return Collections.unmodifiableSet(winner);
 	}
 
 	@Override
