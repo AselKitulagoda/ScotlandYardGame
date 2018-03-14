@@ -22,13 +22,13 @@ import uk.ac.bris.cs.gamekit.graph.Graph;
 import javax.swing.text.html.Option;
 
 // TODO implement all methods and pass all tests
-public class ScotlandYardModel implements ScotlandYardGame {
+public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
 	private int currentIndex = 0;
-	private Colour currentPlayer;
+	//private Colour currentPlayer;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
@@ -110,22 +110,36 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	}
 
 	private Set<Move> validMove(Colour player) {
-		List<Node<Integer>> nodes = graph.getNodes();
-		Collection<Edge<Integer, Transport>> edges = graph.getEdges();
+		ScotlandYardPlayer p = playerFromColour(player);
 		Set<Move> validMoves = new HashSet<>();
-		Node<Integer> currentNode = location(getPlayerLocation(player));
+		validMoves.add(new PassMove(player));
+		Node<Integer> currentNode = nodeFromOptional(getPlayerLocation(player));
 		Collection<Edge<Integer, Transport>> possibilities = graph.getEdgesFrom(currentNode);
+
+			for (Edge<Integer, Transport> edge : possibilities) {
+
+					if (p.hasTickets(fromTransport(edge.data())) && (p.location() != edge.destination().value()))
+						validMoves.add(new TicketMove(player, fromTransport(edge.data()), edge.destination().value()));
+
+			}
+
 		return validMoves;
 	}
 
-	private Node<Integer> location(Optional<Integer> x){
+	private Node<Integer> nodeFromOptional(Optional<Integer> x){
 		return graph.getNode(x.get());
 	}
 
 	@Override
-	public void startRotate() {
+	public void accept(Move move){
 		// TODO
 		throw new RuntimeException("Implement me");
+	}
+
+	@Override
+	public void startRotate() {
+		ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
+		playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
 	}
 
 	@Override
@@ -185,14 +199,22 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		List<Colour> x = getPlayers();
+		/*List<Colour> x = getPlayers();
 		for(int i = currentIndex; i < x.size(); i++) {
 			if(currentIndex == players.size() + 1) currentIndex = 0;
 			currentIndex++;
 			currentPlayer = x.get(i);
 			break;
+		} */
+		return BLACK;
+	}
+
+	private ScotlandYardPlayer playerFromColour(Colour colour) {
+		for(ScotlandYardPlayer x : players){
+			if(colour == x.colour())
+				return x;
 		}
-		return currentPlayer;
+		throw new IllegalArgumentException("colour not found!");
 	}
 
 	@Override
