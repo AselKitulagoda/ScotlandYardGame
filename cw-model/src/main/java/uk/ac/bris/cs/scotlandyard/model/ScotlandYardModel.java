@@ -14,9 +14,8 @@ import static uk.ac.bris.cs.scotlandyard.model.Ticket.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import uk.ac.bris.cs.gamekit.graph.Edge;
-import uk.ac.bris.cs.gamekit.graph.Graph;
-import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
+
+import uk.ac.bris.cs.gamekit.graph.*;
 
 import uk.ac.bris.cs.gamekit.graph.Graph;
 
@@ -70,7 +69,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				throw new IllegalArgumentException("Duplicate colour!");
 			colourSet.add(player.colour);
 		}
-		checkTickets(firstDetective, mrX);
+		checkTickets(firstDetective, mrX, restOfTheDetectives);
 	}
 
 	//Method to check whether all ticket types exist and assigning respective tickets to players
@@ -108,6 +107,19 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public void unregisterSpectator(Spectator spectator) {
 		// TODO
 		throw new RuntimeException("Implement me");
+	}
+
+	private Set<Move> validMove(Colour player) {
+		List<Node<Integer>> nodes = graph.getNodes();
+		Collection<Edge<Integer, Transport>> edges = graph.getEdges();
+		Set<Move> validMoves = new HashSet<>();
+		Node<Integer> currentNode = location(getPlayerLocation(player));
+		Collection<Edge<Integer, Transport>> possibilities = graph.getEdgesFrom(currentNode);
+		return validMoves;
+	}
+
+	private Node<Integer> location(Optional<Integer> x){
+		return graph.getNode(x.get());
 	}
 
 	@Override
