@@ -28,7 +28,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
 	private int currentIndex = 0;
-	//private Colour currentPlayer;
+	private Colour currentPlayer;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
@@ -113,7 +113,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		ScotlandYardPlayer p = playerFromColour(player);
 		Set<Move> validMoves = new HashSet<>();
 		validMoves.add(new PassMove(player));
-		Node<Integer> currentNode = nodeFromOptional(getPlayerLocation(player));
+		Node<Integer> currentNode = new Node<>(p.location());
 		Collection<Edge<Integer, Transport>> possibilities = graph.getEdgesFrom(currentNode);
 
 			for (Edge<Integer, Transport> edge : possibilities) {
@@ -126,14 +126,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return validMoves;
 	}
 
-	private Node<Integer> nodeFromOptional(Optional<Integer> x){
-		return graph.getNode(x.get());
-	}
-
 	@Override
 	public void accept(Move move){
-		// TODO
-		throw new RuntimeException("Implement me");
+		requireNonNull(move);
+
 	}
 
 	@Override
@@ -168,14 +164,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	public Optional<Integer> getPlayerLocation(Colour colour) {
 			for(ScotlandYardPlayer player : players) {
 				if (colour == player.colour()) {
-					if (rounds.get(getCurrentRound()) && player.isMrX())
+					if (player.isDetective())
+						return Optional.of(player.location());
+					else if (rounds.get(getCurrentRound()) && player.isMrX())
 						return Optional.of(player.location());
 					else if(!rounds.get(getCurrentRound()) && player.isMrX())
 						return Optional.of(0);
-					else if(rounds.get(getCurrentRound()) && player.isDetective())
-						return Optional.of(0);
-					else if (!rounds.get(getCurrentRound()) && player.isDetective())
-						return Optional.of(player.location());
 				}
 			}
 			return Optional.empty();
@@ -199,14 +193,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		/*List<Colour> x = getPlayers();
+		List<Colour> x = getPlayers();
 		for(int i = currentIndex; i < x.size(); i++) {
 			if(currentIndex == players.size() + 1) currentIndex = 0;
 			currentIndex++;
 			currentPlayer = x.get(i);
 			break;
-		} */
-		return BLACK;
+		}
+		return currentPlayer;
 	}
 
 	private ScotlandYardPlayer playerFromColour(Colour colour) {
