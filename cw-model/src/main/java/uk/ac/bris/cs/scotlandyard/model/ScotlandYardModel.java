@@ -24,6 +24,7 @@ import javax.swing.text.html.Option;
 // TODO implement all methods and pass all tests
 public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
+	private PlayerConfiguration mrX;
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
@@ -109,20 +110,62 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		throw new RuntimeException("Implement me");
 	}
 
+	public Set<TicketMove> createMoves(Colour colour, int startingPoint) {
+		ScotlandYardPlayer p = playerFromColour(colour);
+		Set<TicketMove> ticketMoves = new HashSet<>();
+		List<Integer> locations = new ArrayList<>();
+		Node<Integer> start = new Node<>(startingPoint);
+		Collection<Edge<Integer, Transport>> possibilities = graph.getEdgesFrom(start);
+
+		for(ScotlandYardPlayer player : players){
+			if(player.isDetective())
+				locations.add(player.location());
+		}
+
+		for(Edge<Integer, Transport> edge : possibilities){
+			if(p.hasTickets(fromTransport(edge.data())) && !(locations.contains(edge.destination().value())))
+				ticketMoves.add(new TicketMove(colour, fromTransport(edge.data()), edge.destination().value()));
+		}
+		return ticketMoves;
+	}
+
 	private Set<Move> validMove(Colour player) {
+
 		ScotlandYardPlayer p = playerFromColour(player);
+		ScotlandYardPlayer mrx = players.get(0);
 		Set<Move> validMoves = new HashSet<>();
-		validMoves.add(new PassMove(player));
-		Node<Integer> currentNode = new Node<>(p.location());
-		Collection<Edge<Integer, Transport>> possibilities = graph.getEdgesFrom(currentNode);
+		Set<TicketMove> singleMove = new HashSet<>();
+		Set<TicketMove> doubleMove = new HashSet<>();
+		int lastRound = rounds.size() - 1;
 
-			for (Edge<Integer, Transport> edge : possibilities) {
+		if(player != BLACK){
+			validMoves.addAll(createMoves(player, p.location()));
 
-					if (p.hasTickets(fromTransport(edge.data())) && (p.location() != edge.destination().value()))
-						validMoves.add(new TicketMove(player, fromTransport(edge.data()), edge.destination().value()));
+			if(validMoves.isEmpty())
+				validMoves.add(new PassMove(player));
+		}
+		else {
+			singleMove.addAll(createMoves(player, mrx.location()));
+			validMoves.addAll(singleMove);
 
+			if(mrx.hasTickets(DOUBLE) && currentRound < lastRound){
+
+				for(TicketMove move1 : singleMove){
+					doubleMove.addAll(createMoves(BLACK, move1.destination()));
+
+					for(TicketMove move2 : doubleMove){
+
+						if(mrx.hasTickets(move1.ticket()) && mrx.hasTickets(move2.ticket()))
+							validMoves.add(new DoubleMove(BLACK, move1, move2));
+
+						else if(move1.ticket() == move2.ticket()){
+							if(mrx.hasTickets(move1.ticket(), 2))
+								validMoves.add(new DoubleMove(BLACK, move1, move2));
+						}
+					}
+				}
 			}
-
+		}
 		return validMoves;
 	}
 

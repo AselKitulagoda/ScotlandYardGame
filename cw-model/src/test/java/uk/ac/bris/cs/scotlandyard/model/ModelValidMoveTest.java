@@ -53,7 +53,7 @@ public class ModelValidMoveTest extends ParameterisedModelTestBase {
 						taxi(BLUE, 160),
 						taxi(BLUE, 172))))
 				.thenIgnoreAnyFurtherInteractions();
-	}
+}
 
 	@Test
 	public void testDetectiveMovesOmittedIfNotEnoughTickets() {
