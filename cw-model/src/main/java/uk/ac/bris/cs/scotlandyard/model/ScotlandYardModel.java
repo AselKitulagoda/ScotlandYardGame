@@ -132,7 +132,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private Set<Move> validMove(Colour player) {
 
 		ScotlandYardPlayer p = playerFromColour(player);
-		ScotlandYardPlayer mrx = players.get(0);
+		//ScotlandYardPlayer mrx = players.get(0);
 		Set<Move> validMoves = new HashSet<>();
 		Set<TicketMove> singleMove = new HashSet<>();
 		Set<TicketMove> doubleMove = new HashSet<>();
@@ -145,22 +145,27 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				validMoves.add(new PassMove(player));
 		}
 		else {
-			singleMove.addAll(createMoves(player, mrx.location()));
+			singleMove.addAll(createMoves(player, p.location()));
 			validMoves.addAll(singleMove);
 
-			if(mrx.hasTickets(DOUBLE) && currentRound < lastRound){
+			if(p.hasTickets(DOUBLE) && currentRound < lastRound){
 
 				for(TicketMove move1 : singleMove){
 					doubleMove.addAll(createMoves(BLACK, move1.destination()));
 
 					for(TicketMove move2 : doubleMove){
 
-						if(mrx.hasTickets(move1.ticket()) && mrx.hasTickets(move2.ticket()))
+						if(p.hasTickets(move1.ticket()) && p.hasTickets(move2.ticket()))
 							validMoves.add(new DoubleMove(BLACK, move1, move2));
 
 						else if(move1.ticket() == move2.ticket()){
-							if(mrx.hasTickets(move1.ticket(), 2))
+							if(p.hasTickets(move1.ticket(), 2))
 								validMoves.add(new DoubleMove(BLACK, move1, move2));
+						}
+						else if(move2.equals(SECRET) && p.hasTickets(SECRET)){
+							validMoves.add(new DoubleMove(player, move1.ticket(), move1.destination(), SECRET, move2.destination()));
+							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), move2.ticket(), move2.destination()));
+							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), SECRET, move2.destination()));
 						}
 					}
 				}
