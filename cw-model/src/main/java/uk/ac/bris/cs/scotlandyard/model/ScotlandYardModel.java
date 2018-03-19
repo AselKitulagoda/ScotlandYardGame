@@ -24,7 +24,6 @@ import javax.swing.text.html.Option;
 // TODO implement all methods and pass all tests
 public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
-	private PlayerConfiguration mrX;
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
@@ -132,7 +131,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private Set<Move> validMove(Colour player) {
 
 		ScotlandYardPlayer p = playerFromColour(player);
-		//ScotlandYardPlayer mrx = players.get(0);
 		Set<Move> validMoves = new HashSet<>();
 		Set<TicketMove> singleMove = new HashSet<>();
 		Set<TicketMove> doubleMove = new HashSet<>();
@@ -148,7 +146,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			singleMove.addAll(createMoves(player, p.location()));
 			validMoves.addAll(singleMove);
 
-			if(p.hasTickets(DOUBLE) && currentRound < lastRound){
+			if(p.hasTickets(DOUBLE) && currentRound != lastRound){
 
 				for(TicketMove move1 : singleMove){
 					doubleMove.addAll(createMoves(BLACK, move1.destination()));
@@ -162,7 +160,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 							if(p.hasTickets(move1.ticket(), 2))
 								validMoves.add(new DoubleMove(BLACK, move1, move2));
 						}
-						else if(move2.equals(SECRET) && p.hasTickets(SECRET)){
+						else if(move1.equals(SECRET) && p.hasTickets(SECRET)){
 							validMoves.add(new DoubleMove(player, move1.ticket(), move1.destination(), SECRET, move2.destination()));
 							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), move2.ticket(), move2.destination()));
 							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), SECRET, move2.destination()));
@@ -177,7 +175,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public void accept(Move move){
 		requireNonNull(move);
-
+		currentPlayer = getCurrentPlayer();
+		startRotate();
 	}
 
 	@Override
