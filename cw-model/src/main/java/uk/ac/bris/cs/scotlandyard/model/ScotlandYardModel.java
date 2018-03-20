@@ -124,6 +124,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		for(Edge<Integer, Transport> edge : possibilities){
 			if(p.hasTickets(fromTransport(edge.data())) && !(locations.contains(edge.destination().value())))
 				ticketMoves.add(new TicketMove(colour, fromTransport(edge.data()), edge.destination().value()));
+			if(p.isMrX() && p.hasTickets(SECRET) && !(locations.contains(edge.destination().value())))
+				ticketMoves.add(new TicketMove(colour, SECRET, edge.destination().value()));
 		}
 		return ticketMoves;
 	}
@@ -132,42 +134,46 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		ScotlandYardPlayer p = playerFromColour(player);
 		Set<Move> validMoves = new HashSet<>();
-		Set<TicketMove> singleMove = new HashSet<>();
-		Set<TicketMove> doubleMove = new HashSet<>();
 		int lastRound = rounds.size() - 1;
 
-		if(player != BLACK){
-			validMoves.addAll(createMoves(player, p.location()));
+		if(p.isMrX()){
 
-			if(validMoves.isEmpty())
-				validMoves.add(new PassMove(player));
-		}
-		else {
+			Set<TicketMove> singleMove = new HashSet<>();
 			singleMove.addAll(createMoves(player, p.location()));
 			validMoves.addAll(singleMove);
 
-			if(p.hasTickets(DOUBLE) && currentRound != lastRound){
+			if(currentRound != lastRound && p.hasTickets(DOUBLE)){
 
 				for(TicketMove move1 : singleMove){
+
+					Set<TicketMove> doubleMove = new HashSet<>();
 					doubleMove.addAll(createMoves(BLACK, move1.destination()));
 
 					for(TicketMove move2 : doubleMove){
 
-						if(p.hasTickets(move1.ticket()) && p.hasTickets(move2.ticket()))
+						if(p.hasTickets(move2.ticket()))
 							validMoves.add(new DoubleMove(BLACK, move1, move2));
 
-						else if(move1.ticket() == move2.ticket()){
+						if(move1.ticket() == move2.ticket()){
 							if(p.hasTickets(move1.ticket(), 2))
 								validMoves.add(new DoubleMove(BLACK, move1, move2));
 						}
-						else if(move1.equals(SECRET) && p.hasTickets(SECRET)){
-							validMoves.add(new DoubleMove(player, move1.ticket(), move1.destination(), SECRET, move2.destination()));
-							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), move2.ticket(), move2.destination()));
+						/*
+						if(move1.ticket().equals(SECRET) && move2.ticket().equals(SECRET) && p.hasTickets(SECRET, 2))
 							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), SECRET, move2.destination()));
-						}
+						if(move1.ticket().equals(SECRET) && p.hasTickets(SECRET))
+							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), move2.ticket(), move2.destination()));
+						if(move2.ticket().equals(SECRET) && p.hasTickets(SECRET))
+							validMoves.add(new DoubleMove(player, move1.ticket(), move1.destination(), SECRET, move2.destination()));*/
 					}
 				}
 			}
+		}
+		if(p.isDetective()) {
+			validMoves.addAll(createMoves(player, p.location()));
+
+			if(validMoves.isEmpty())
+				validMoves.add(new PassMove(player));
 		}
 		return validMoves;
 	}
@@ -176,11 +182,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	public void accept(Move move){
 		requireNonNull(move);
 		currentPlayer = getCurrentPlayer();
-		startRotate();
+		//if (currentPlayer.isDetective()) //makeMove
 	}
 
 	@Override
 	public void startRotate() {
+		currentPlayer = BLACK;
 		ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
 		playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
 	}
