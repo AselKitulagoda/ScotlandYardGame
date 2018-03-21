@@ -28,7 +28,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
 	private int currentIndex = 0;
-	private Colour currentPlayer;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
@@ -122,7 +121,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		}
 
 		for(Edge<Integer, Transport> edge : possibilities){
-			if(p.hasTickets(fromTransport(edge.data())) && !(locations.contains(edge.destination().value())))
+			if(p.hasTickets(fromTransport(edge.data()), 1) && !(locations.contains(edge.destination().value())))
 				ticketMoves.add(new TicketMove(colour, fromTransport(edge.data()), edge.destination().value()));
 			if(p.isMrX() && p.hasTickets(SECRET) && !(locations.contains(edge.destination().value())))
 				ticketMoves.add(new TicketMove(colour, SECRET, edge.destination().value()));
@@ -154,26 +153,18 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 						if(p.hasTickets(move2.ticket()))
 							validMoves.add(new DoubleMove(BLACK, move1, move2));
 
-						if(move1.ticket() == move2.ticket()){
-							if(p.hasTickets(move1.ticket(), 2))
-								validMoves.add(new DoubleMove(BLACK, move1, move2));
+						if(move1.ticket() == move2.ticket() && !p.hasTickets(move1.ticket(), 2)){
+								validMoves.remove(new DoubleMove(BLACK, move1, move2));
 						}
-						/*
-						if(move1.ticket().equals(SECRET) && move2.ticket().equals(SECRET) && p.hasTickets(SECRET, 2))
-							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), SECRET, move2.destination()));
-						if(move1.ticket().equals(SECRET) && p.hasTickets(SECRET))
-							validMoves.add(new DoubleMove(player, SECRET, move1.destination(), move2.ticket(), move2.destination()));
-						if(move2.ticket().equals(SECRET) && p.hasTickets(SECRET))
-							validMoves.add(new DoubleMove(player, move1.ticket(), move1.destination(), SECRET, move2.destination()));*/
 					}
 				}
 			}
 		}
 		if(p.isDetective()) {
 			validMoves.addAll(createMoves(player, p.location()));
-
-			if(validMoves.isEmpty())
-				validMoves.add(new PassMove(player));
+		}
+		if(p.isDetective() && validMoves.isEmpty()){
+			validMoves.add(new PassMove(player));
 		}
 		return validMoves;
 	}
@@ -181,13 +172,19 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public void accept(Move move){
 		requireNonNull(move);
-		currentPlayer = getCurrentPlayer();
-		//if (currentPlayer.isDetective()) //makeMove
+		if(currentIndex < players.size() - 1){
+			currentIndex += 1;
+			ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
+			playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
+		}
+		else{
+			currentIndex = 0;
+			currentRound += 1;
+		}
 	}
 
 	@Override
 	public void startRotate() {
-		currentPlayer = BLACK;
 		ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
 		playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
 	}
@@ -247,14 +244,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		List<Colour> x = getPlayers();
-		for(int i = currentIndex; i < x.size(); i++) {
-			if(currentIndex == players.size() + 1) currentIndex = 0;
-			currentIndex++;
-			currentPlayer = x.get(i);
-			break;
-		}
-		return currentPlayer;
+		return getPlayers().get(currentIndex);
 	}
 
 	private ScotlandYardPlayer playerFromColour(Colour colour) {
