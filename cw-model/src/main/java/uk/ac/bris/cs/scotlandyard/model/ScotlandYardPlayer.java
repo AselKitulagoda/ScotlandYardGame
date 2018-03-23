@@ -108,7 +108,6 @@ public class ScotlandYardPlayer {
 		tickets.remove(ticket);
 		tickets.put(ticket, ticketCount);
 	}
-
 	/**
 	 * Checks whether the player has the given ticket
 	 *

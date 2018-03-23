@@ -7,8 +7,7 @@ import static java.util.Collections.unmodifiableCollection;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
-import static uk.ac.bris.cs.scotlandyard.model.Colour.BLACK;
-import static uk.ac.bris.cs.scotlandyard.model.Colour.YELLOW;
+import static uk.ac.bris.cs.scotlandyard.model.Colour.*;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.*;
 
 import java.util.*;
@@ -22,7 +21,7 @@ import uk.ac.bris.cs.gamekit.graph.Graph;
 import javax.swing.text.html.Option;
 
 // TODO implement all methods and pass all tests
-public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
+public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, MoveVisitor {
 
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
@@ -108,6 +107,36 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		throw new RuntimeException("Implement me");
 	}
 
+	private ScotlandYardPlayer playerFromColour(Colour colour) {
+		for(ScotlandYardPlayer x : players){
+			if(colour == x.colour())
+				return x;
+		}
+		throw new IllegalArgumentException("colour not found!");
+	}
+
+
+	@Override
+	public void visit(PassMove move){
+
+	}
+
+	@Override
+	public void visit(TicketMove move){
+		ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
+		playa.location(move.destination());
+		if(playa.isMrX())
+			currentRound += 1;
+	}
+
+	@Override
+	public void visit(DoubleMove move){
+		ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
+		playa.location(move.finalDestination());
+		currentRound += 1;
+	}
+
+
 	public Set<TicketMove> createMoves(Colour colour, int startingPoint) {
 		ScotlandYardPlayer p = playerFromColour(colour);
 		Set<TicketMove> ticketMoves = new HashSet<>();
@@ -154,7 +183,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 							validMoves.add(new DoubleMove(BLACK, move1, move2));
 
 						if(move1.ticket() == move2.ticket() && !p.hasTickets(move1.ticket(), 2)){
-								validMoves.remove(new DoubleMove(BLACK, move1, move2));
+							validMoves.remove(new DoubleMove(BLACK, move1, move2));
 						}
 					}
 				}
@@ -171,15 +200,20 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public void accept(Move move){
+
 		requireNonNull(move);
-		if(currentIndex < players.size() - 1){
-			currentIndex += 1;
-			ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
-			playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
-		}
-		else{
-			currentIndex = 0;
-			currentRound += 1;
+		if(!validMove(getCurrentPlayer()).contains(move))
+			throw new IllegalArgumentException("No valid moves!");
+		move.visit(this);
+		if(currentRound != rounds.size()){
+			if(currentIndex < players.size() - 1){
+				currentIndex += 1;
+				ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
+				playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
+			}
+			else{
+				currentIndex = 0;
+			}
 		}
 	}
 
@@ -245,14 +279,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public Colour getCurrentPlayer() {
 		return getPlayers().get(currentIndex);
-	}
-
-	private ScotlandYardPlayer playerFromColour(Colour colour) {
-		for(ScotlandYardPlayer x : players){
-			if(colour == x.colour())
-				return x;
-		}
-		throw new IllegalArgumentException("colour not found!");
 	}
 
 	@Override
