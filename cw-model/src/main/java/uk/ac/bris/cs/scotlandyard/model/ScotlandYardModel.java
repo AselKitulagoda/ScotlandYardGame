@@ -28,6 +28,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
 	private int currentIndex = 0;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
+	private Collection<Spectator> spectators = new CopyOnWriteArrayList<>();
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -123,9 +124,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	@Override
 	public void visit(TicketMove move){
-		ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
-		playa.location(move.destination());
-		if(playa.isMrX())
+		ScotlandYardPlayer p = playerFromColour(getCurrentPlayer());
+		p.location(move.destination());
+		if(p.isMrX())
 			currentRound += 1;
 	}
 
@@ -135,7 +136,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		playa.location(move.finalDestination());
 		currentRound += 1;
 	}
-
 
 	public Set<TicketMove> createMoves(Colour colour, int startingPoint) {
 		ScotlandYardPlayer p = playerFromColour(colour);
@@ -198,23 +198,59 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		return validMoves;
 	}
 
+	private boolean roundsAreOver(){
+		if(currentRound == rounds.size())
+			return true;
+		else
+			return false;
+	}
+
+	private boolean mrXIsCaught(){
+		ScotlandYardPlayer mrX = playerFromColour(BLACK);
+		for(ScotlandYardPlayer p : players){
+			if(p.isDetective()){
+				if(p.location() == mrX.location())
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean mrXIsStuck(){
+		if(validMove(BLACK).isEmpty()){
+			return true;
+		}
+		return false;
+	}
+
+	private boolean detectivesAreStuck(){
+		for(ScotlandYardPlayer p : players){
+			if(p.isDetective() && !createMoves(p.colour(), p.location()).isEmpty())
+				return false;
+		}
+		return true;
+	}
+
 	@Override
 	public void accept(Move move){
 
 		requireNonNull(move);
+
 		if(!validMove(getCurrentPlayer()).contains(move))
 			throw new IllegalArgumentException("No valid moves!");
+
 		move.visit(this);
-		if(currentRound != rounds.size()){
-			if(currentIndex < players.size() - 1){
-				currentIndex += 1;
-				ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
-				playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
+		//boolean endOfRot = currentIndex ==players.size() - 1;
+			if (currentRound != rounds.size() ) {
+				if (currentIndex < players.size() - 1) {
+					currentIndex += 1;
+					ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
+					playa.player().makeMove(this, playa.location(), validMove(playa.colour()), this);
+				}
+				else {
+					currentIndex = 0;
+				}
 			}
-			else{
-				currentIndex = 0;
-			}
-		}
 	}
 
 	@Override
@@ -225,8 +261,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	@Override
 	public Collection<Spectator> getSpectators() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return Collections.unmodifiableCollection(spectators);
 	}
 
 	@Override
@@ -241,7 +276,17 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	@Override
 	public Set<Colour> getWinningPlayers() {
+
 		Set<Colour> winner = new HashSet<>();
+		List<Colour> allPlayers = getPlayers();
+
+		if(mrXIsStuck() || mrXIsCaught()){
+			winner.add(BLACK);
+		}
+		else if(roundsAreOver() || detectivesAreStuck()){
+			winner.addAll(allPlayers);
+			winner.remove(BLACK);
+		}
 		return Collections.unmodifiableSet(winner);
 	}
 
@@ -273,7 +318,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	@Override
 	public boolean isGameOver() {
-		return false;
+		if(roundsAreOver() || mrXIsCaught() || mrXIsStuck() || detectivesAreStuck()){
+			return true;
+		}
+		else
+			return false;
 	}
 
 	@Override
