@@ -98,14 +98,22 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	@Override
 	public void registerSpectator(Spectator spectator) {
-		// TODO
-		throw new RuntimeException("Implement me");
+		if(spectators.contains(requireNonNull(spectator))){
+			throw new IllegalArgumentException("The spectator is already registered!");
+		}
+		else {
+			spectators.add(spectator);
+		}
 	}
 
 	@Override
 	public void unregisterSpectator(Spectator spectator) {
-		// TODO
-		throw new RuntimeException("Implement me");
+		if(spectators.contains(requireNonNull(spectator))){
+			spectators.remove(spectator);
+		}
+		else {
+			throw new IllegalArgumentException("The spectator is not registered!");
+		}
 	}
 
 	private ScotlandYardPlayer playerFromColour(Colour colour) {
@@ -170,7 +178,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			singleMove.addAll(createMoves(player, p.location()));
 			validMoves.addAll(singleMove);
 
-			if(currentRound != lastRound && p.hasTickets(DOUBLE)){
+			if(currentRound < lastRound && p.hasTickets(DOUBLE)){
 
 				for(TicketMove move1 : singleMove){
 
@@ -235,13 +243,19 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	public void accept(Move move){
 
 		requireNonNull(move);
+		ScotlandYardPlayer p = playerFromColour(move.colour());
+		ScotlandYardPlayer mrX = playerFromColour(BLACK);
 
-		if(!validMove(getCurrentPlayer()).contains(move))
-			throw new IllegalArgumentException("No valid moves!");
 
-		move.visit(this);
-		//boolean endOfRot = currentIndex ==players.size() - 1;
-			if (currentRound != rounds.size() ) {
+		if(!validMove(move.colour()).contains(move))
+			throw new IllegalArgumentException("Illegal move!");
+
+		else {
+
+			move.visit(this);
+
+			if (!isGameOver()) {
+
 				if (currentIndex < players.size() - 1) {
 					currentIndex += 1;
 					ScotlandYardPlayer playa = playerFromColour(getCurrentPlayer());
@@ -251,6 +265,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 					currentIndex = 0;
 				}
 			}
+
+		}
 	}
 
 	@Override
@@ -280,10 +296,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		Set<Colour> winner = new HashSet<>();
 		List<Colour> allPlayers = getPlayers();
 
-		if(mrXIsStuck() || mrXIsCaught()){
+		if(roundsAreOver() || detectivesAreStuck()){
 			winner.add(BLACK);
 		}
-		else if(roundsAreOver() || detectivesAreStuck()){
+		else if(mrXIsStuck() || mrXIsCaught()){
 			winner.addAll(allPlayers);
 			winner.remove(BLACK);
 		}
