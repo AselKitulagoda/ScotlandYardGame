@@ -31,6 +31,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	private Collection<Spectator> spectators = new CopyOnWriteArrayList<>();
 	private int xLocation;
 	private TicketMove move1, move2;
+	private boolean revealRound = false;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -157,9 +158,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			p.removeTicket(DOUBLE);
 			p.removeTicket(move1.ticket());
 			p.removeTicket(move2.ticket());
-			xLocation = move.finalDestination();
 			currentRound += 1;
 		}
+		xLocation = move.finalDestination();
 	}
 
 	public Set<TicketMove> createMoves(Colour colour, int startingPoint) {
@@ -256,20 +257,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		return true;
 	}
 
-	private int getLastKnownLocation(ScotlandYardPlayer mrX){
-		mrX = playerFromColour(BLACK);
-		int reveal = 0;
-
-		if(rounds.get(currentRound))
-			reveal = mrX.location();
-
-		return reveal;
-	}
-
 	@Override
 	public void accept(Move move) {
 
 		requireNonNull(move);
+		revealRound = players.get(currentIndex).isMrX() && rounds.get(currentRound);
 
 		if (!validMove(move.colour()).contains(move))
 			throw new IllegalArgumentException("Incorrect move!");
@@ -306,9 +298,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			ScotlandYardPlayer mrX = playerFromColour(BLACK);
 			mrX.player().makeMove(this, mrX.location(), validMove(BLACK), this);
 
-			for(Spectator s : spectators){
-				s.onRoundStarted(this, currentRound);
-			}
+			for(Spectator s : spectators) s.onRoundStarted(this, currentRound);
 		}
 	}
 
@@ -360,10 +350,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 				if (colour == player.colour()) {
 					if (player.isDetective())
 						return Optional.of(player.location());
-					else if (rounds.get(getCurrentRound()) && player.isMrX())
-						return Optional.of(player.location());
-					else if(!rounds.get(getCurrentRound()) && player.isMrX())
-						return Optional.of(0);
+					else if (revealRound && player.isMrX()){
+						xLocation = player.location();
+						return Optional.of(xLocation);
+					}
+					else if(!revealRound && player.isMrX())
+						return Optional.of(xLocation);
 				}
 			}
 			return Optional.empty();
