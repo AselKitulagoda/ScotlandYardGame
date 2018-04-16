@@ -26,7 +26,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
-	private int currentIndex = 0;
+	private int currentPlayer = 0;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
 	private Collection<Spectator> spectators = new CopyOnWriteArrayList<>();
 	private int xLocation;
@@ -34,8 +34,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	private boolean revealRound = false;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
-			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
-			PlayerConfiguration... restOfTheDetectives) {
+							 PlayerConfiguration mrX, PlayerConfiguration firstDetective,
+							 PlayerConfiguration... restOfTheDetectives) {
 
 		this.rounds = requireNonNull(rounds);
 		this.graph = requireNonNull(graph);
@@ -78,22 +78,22 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	public void checkTickets(PlayerConfiguration firstDetective, PlayerConfiguration mrX, PlayerConfiguration... restOfTheDetectives){
 		List<PlayerConfiguration> detectives = new ArrayList<>();
 
-			if(!firstDetective.tickets.containsKey(SECRET) || !firstDetective.tickets.containsKey(DOUBLE) || !firstDetective.tickets.containsKey(TAXI) || !firstDetective.tickets.containsKey(UNDERGROUND) || !firstDetective.tickets.containsKey(BUS))
+		if(!firstDetective.tickets.containsKey(SECRET) || !firstDetective.tickets.containsKey(DOUBLE) || !firstDetective.tickets.containsKey(TAXI) || !firstDetective.tickets.containsKey(UNDERGROUND) || !firstDetective.tickets.containsKey(BUS))
+			throw new IllegalArgumentException("error");
+
+		if(firstDetective.tickets.get(SECRET) != 0 || firstDetective.tickets.get(DOUBLE) != 0 )
+			throw new IllegalArgumentException("error!");
+
+		for(PlayerConfiguration rest : restOfTheDetectives){
+
+			detectives.add(requireNonNull(rest));
+
+			if(!rest.tickets.containsKey(SECRET) || !rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) || !rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
 				throw new IllegalArgumentException("error");
 
-			if(firstDetective.tickets.get(SECRET) != 0 || firstDetective.tickets.get(DOUBLE) != 0 )
+			if(rest.tickets.get(SECRET) != 0 || rest.tickets.get(DOUBLE) != 0 )
 				throw new IllegalArgumentException("error!");
-
-			for(PlayerConfiguration rest : restOfTheDetectives){
-
-				detectives.add(requireNonNull(rest));
-
-				if(!rest.tickets.containsKey(SECRET) || !rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) || !rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
-					throw new IllegalArgumentException("error");
-
-				if(rest.tickets.get(SECRET) != 0 || rest.tickets.get(DOUBLE) != 0 )
-					throw new IllegalArgumentException("error!");
-			}
+		}
 
 		if(!mrX.tickets.containsKey(TAXI) || !mrX.tickets.containsKey(BUS) || !mrX.tickets.containsKey(UNDERGROUND) || !mrX.tickets.containsKey(SECRET) || !mrX.tickets.containsKey(DOUBLE))
 			throw new IllegalArgumentException("MrX must have all tickets");
@@ -144,13 +144,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 		if(p.isMrX())
 			currentRound += 1;
+			startRound();
 	}
 
 	@Override
 	public void visit(DoubleMove move){
 		ScotlandYardPlayer p = playerFromColour(move.colour());
-		ScotlandYardPlayer mrX = playerFromColour(BLACK);
-		xLocation = mrX.location();
 		move1 = move.firstMove();
 		move2 = move.secondMove();
 
@@ -158,9 +157,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			p.removeTicket(DOUBLE);
 			p.removeTicket(move1.ticket());
 			p.removeTicket(move2.ticket());
-			currentRound += 1;
+			currentRound += 2;
 		}
-		xLocation = move.finalDestination();
+		p.location(move.finalDestination());
 	}
 
 	public Set<TicketMove> createMoves(Colour colour, int startingPoint) {
@@ -225,7 +224,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	}
 
 	private boolean roundsAreOver(){
-		if(currentRound == rounds.size())
+		if(currentRound == rounds.size() && currentPlayer == players.size() - 1)
 			return true;
 		else
 			return false;
@@ -243,7 +242,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	}
 
 	private boolean mrXIsStuck(){
-		if(validMove(BLACK).isEmpty()){
+		if(validMove(BLACK).isEmpty() && currentPlayer == players.size() - 1  ){
 			return true;
 		}
 		return false;
@@ -261,7 +260,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	public void accept(Move move) {
 
 		requireNonNull(move);
-		revealRound = players.get(currentIndex).isMrX() && rounds.get(currentRound);
+		revealRound = players.get(currentPlayer).isMrX() && rounds.get(currentRound);
 
 		if (!validMove(move.colour()).contains(move))
 			throw new IllegalArgumentException("Incorrect move!");
@@ -269,15 +268,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		move.visit(this);
 
 		if(!isGameOver()){
-			if(currentIndex < players.size() - 1){
+			if(currentPlayer < players.size() - 1){
 
-				currentIndex += 1;
-
+				currentPlayer += 1;
+				if(players.get(currentPlayer - 1).isMrX()) startRound();
 				if(!(move instanceof DoubleMove)) updateSpectators(move);
 				playMove();
 			}
 			else {
-				currentIndex = 0;
+				currentPlayer = 0;
 				if(!(move instanceof DoubleMove)) updateSpectators(move);
 				for(Spectator s : spectators) s.onRotationComplete(this);
 			}
@@ -285,6 +284,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		else {
 			updateSpectators(move);
 			for(Spectator s : spectators) s.onGameOver(this, getWinningPlayers());
+		}
+
+	}
+
+	private void startRound(){
+		for(Spectator s : spectators){
+			s.onRoundStarted(this, currentRound);
 		}
 	}
 
@@ -294,11 +300,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		if(isGameOver())
 			throw new IllegalArgumentException("Game is over!");
 		else {
-			currentIndex = 0;
+			currentPlayer = 0;
 			ScotlandYardPlayer mrX = playerFromColour(BLACK);
 			mrX.player().makeMove(this, mrX.location(), validMove(BLACK), this);
-
-			for(Spectator s : spectators) s.onRoundStarted(this, currentRound);
 		}
 	}
 
@@ -346,19 +350,20 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	@Override
 	public Optional<Integer> getPlayerLocation(Colour colour) {
-			for(ScotlandYardPlayer player : players) {
-				if (colour == player.colour()) {
-					if (player.isDetective())
-						return Optional.of(player.location());
-					else if (revealRound && player.isMrX()){
-						xLocation = player.location();
-						return Optional.of(xLocation);
-					}
-					else if(!revealRound && player.isMrX())
-						return Optional.of(xLocation);
+		//ScotlandYardPlayer mrX = playerFromColour(BLACK);
+		for(ScotlandYardPlayer player : players) {
+			if (colour == player.colour()) {
+				if (player.isDetective())
+					return Optional.of(player.location());
+				else if (revealRound && player.isMrX()){
+					xLocation = player.location();
+					return Optional.of(xLocation);
 				}
+				else if(!revealRound && player.isMrX())
+					return Optional.of(xLocation);
 			}
-			return Optional.empty();
+		}
+		return Optional.empty();
 	}
 
 	@Override
@@ -383,7 +388,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	@Override
 	public Colour getCurrentPlayer() {
-		return getPlayers().get(currentIndex);
+		return getPlayers().get(currentPlayer);
 	}
 
 	@Override
