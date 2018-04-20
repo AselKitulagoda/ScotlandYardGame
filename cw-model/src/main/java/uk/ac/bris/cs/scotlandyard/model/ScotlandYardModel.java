@@ -137,7 +137,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		if(p.isDetective()) mrX.addTicket(move.ticket());
 
 		if(p.isMrX()) currentRound += 1;
-		startRound();
 	}
 
 	//MoveVisitor method for a Double Move (only for mrX)
@@ -148,6 +147,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		move1 = move.firstMove();
 		move2 = move.secondMove();
 		mrX.removeTicket(DOUBLE);
+		currentPlayer += 1;
 
 		if(!revealRound && !rounds.get(currentRound + 1)){ //checking whether current round and round after are hidden rounds
 			moveMade(new DoubleMove(BLACK, move1.ticket(), lastLocation, move2.ticket(), lastLocation));
@@ -178,7 +178,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 		currentRound += 1;
 		revealRound = rounds.get(currentRound);
-
 		startRound();
 		mrX.location(move2.destination());
 		mrX.removeTicket(move2.ticket());
@@ -189,6 +188,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			moveMade(move2);
 
 		}
+		currentPlayer -= 1;
 		mrX.location(move.finalDestination()); //setting mrX's location to the finals destination after making a double move
 	}
 
@@ -268,7 +268,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		return false;
 	}
 
-	//MEthod to check whether the detectives are stuck.
+	//Method to check whether the detectives are stuck.
 	private boolean detectivesAreStuck(){
 		for(ScotlandYardPlayer p : players){
 			if(p.isDetective() && !createMoves(p.colour(), p.location()).isEmpty())
