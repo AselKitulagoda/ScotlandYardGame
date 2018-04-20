@@ -29,9 +29,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	private int currentPlayer = 0;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
 	private Collection<Spectator> spectators = new CopyOnWriteArrayList<>();
-	private int xLocation = 0, lastLocation = 0;
-	private TicketMove move1, move2;
-	private boolean revealRound = false;
+	private int lastLocation = 0;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 							 PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -123,7 +121,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	//MoveVisitor method for a Pass Move
 	@Override
 	public void visit(PassMove move){
-
+		moveMade(move);
 	}
 
 	//MoveVisitor method for a Ticket Move (single move)
@@ -131,12 +129,23 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	public void visit(TicketMove move){
 		ScotlandYardPlayer p = playerFromColour(move.colour());
 		ScotlandYardPlayer mrX = playerFromColour(BLACK);
-		move1 = move;
 		p.location(move.destination());
 		p.removeTicket(move.ticket());
+
 		if(p.isDetective()) mrX.addTicket(move.ticket());
 
-		if(p.isMrX()) currentRound += 1;
+		Move hiddenMove = move;
+
+		if(move.colour().isMrX()) {
+
+			if (!rounds.get(currentRound)) {
+				hiddenMove = new TicketMove(BLACK, move.ticket(), lastLocation);
+			}
+
+			else lastLocation = move.destination();
+			startRound();
+		}
+		moveMade(hiddenMove);
 	}
 
 	//MoveVisitor method for a Double Move (only for mrX)
@@ -144,17 +153,17 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	public void visit(DoubleMove move){
 
 		ScotlandYardPlayer mrX = playerFromColour(BLACK);
-		move1 = move.firstMove();
-		move2 = move.secondMove();
+		TicketMove move1 = move.firstMove();
+		TicketMove move2 = move.secondMove();
 		mrX.removeTicket(DOUBLE);
-		currentPlayer += 1;
+
+		boolean revealRound = rounds.get(currentRound);
 
 		if(!revealRound && !rounds.get(currentRound + 1)){ //checking whether current round and round after are hidden rounds
 			moveMade(new DoubleMove(BLACK, move1.ticket(), lastLocation, move2.ticket(), lastLocation));
 		}
 		else if (revealRound && !rounds.get(currentRound + 1)) { //checking whether the current round is reveal and the round after is hidden
-			lastLocation = move1.destination();
-			moveMade(new DoubleMove(BLACK, move1.ticket(), move1.destination(), move2.ticket(), lastLocation));
+			moveMade(new DoubleMove(BLACK, move1.ticket(), move1.destination(), move2.ticket(), move1.destination()));
 		}
 		else if (!revealRound && rounds.get(currentRound + 1)){ //checking whether the current round is hidden but the round after is reveal
 			moveMade(new DoubleMove(BLACK, move1.ticket(), lastLocation, move2.ticket(), move2.destination()));
@@ -162,34 +171,30 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		else {
 			moveMade(move);
 		}
-		currentRound += 1;
 
-		startRound(); //(spectator.onRoundStarted())
 		mrX.location(move1.destination());
 		mrX.removeTicket(move1.ticket());
-
-		if(!revealRound){
-			moveMade(new TicketMove(BLACK, move1.ticket(), lastLocation));
+		Move hiddenMove = move1;
+		if(move.colour().isMrX()) {
+			if (!rounds.get(currentRound)) {
+				hiddenMove = new TicketMove(BLACK, move1.ticket(), lastLocation);
+			}
+			else lastLocation = move1.destination();
 		}
-		else {
-			moveMade(move1);
-			lastLocation = mrX.location();
-		}
-
-		revealRound = rounds.get(currentRound);
-		currentRound += 1;
 		startRound();
+		moveMade(hiddenMove);
+
 		mrX.location(move2.destination());
 		mrX.removeTicket(move2.ticket());
-		if(!revealRound) {
-			moveMade(new TicketMove(BLACK, move2.ticket(), lastLocation));
+		hiddenMove = move2;
+		if(move.colour().isMrX()) {
+			if (!rounds.get(currentRound)) {
+				hiddenMove = new TicketMove(BLACK, move2.ticket(), lastLocation);
+			}
+			else lastLocation = move2.destination();
 		}
-		else {
-			moveMade(move2);
-
-		}
-		currentPlayer -= 1;
-		mrX.location(move.finalDestination()); //setting mrX's location to the finals destination after making a double move
+		startRound();
+		moveMade(hiddenMove);
 	}
 
 	//Method to create all possible moves from a given location for a colour. (Does not check if valid)
@@ -247,7 +252,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	//Method to check whether the rounds of the game are over
 	private boolean roundsAreOver(){
-		if(currentRound == rounds.size()  && currentPlayer == players.size() - 1) return true;
+		if(currentRound == rounds.size()  && currentPlayer == 0) return true;
 		else return false;
 	}
 
@@ -264,7 +269,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	//Method to check whether mrX is stuck and cannot make a move
 	private boolean mrXIsStuck(){
-		if(validMove(BLACK).isEmpty() && currentPlayer == players.size() - 1) return true;
+		if(validMove(BLACK).isEmpty() && currentPlayer == 0) return true;
 		return false;
 	}
 
@@ -280,8 +285,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	@Override
 	public void accept(Move move) {
 
+		currentPlayer = (currentPlayer + 1) % players.size();
+
 		requireNonNull(move);
-		revealRound = players.get(currentPlayer).isMrX() && rounds.get(currentRound);
 
 		if (!validMove(move.colour()).contains(move))
 			throw new IllegalArgumentException("Incorrect move!");
@@ -289,30 +295,27 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		move.visit(this);
 
 		if(!isGameOver()){
-			if(currentPlayer < players.size() - 1){
+			if(currentPlayer > 0){
 
-				currentPlayer += 1;
-
-				if(!(move instanceof DoubleMove)) {
-					if(players.get(currentPlayer - 1).isMrX())
-						startRound();
-					moveMade(move);
-				}
+//				if(!(move instanceof DoubleMove)) {
+//				if(players.get(currentPlayer - 1).isMrX())
+//					startRound();
+//					moveMade(move);
+//				}
 				playMove();
 			}
 			else {
-				currentPlayer = 0;
-				if(!(move instanceof DoubleMove)) moveMade(move);
+//				if(!(move instanceof DoubleMove)) moveMade(move);
 				for(Spectator s : spectators) s.onRotationComplete(this);
 			}
 		}
 		else {
-			moveMade(move);
 			for(Spectator s : spectators) s.onGameOver(this, getWinningPlayers());
 		}
 	}
 
 	private void startRound(){
+		currentRound += 1;
 		for(Spectator s : spectators) s.onRoundStarted(this, currentRound);
 	}
 
@@ -371,12 +374,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			if (colour == player.colour()) {
 				if (player.isDetective())
 					return Optional.of(player.location());
-				else if (revealRound && player.isMrX()){
-					xLocation = player.location();
-					return Optional.of(xLocation);
-				}
-				else if(!revealRound && player.isMrX())
-					return Optional.of(xLocation);
+				else
+					return Optional.of(lastLocation);
 			}
 		}
 		return Optional.empty();
