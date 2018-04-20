@@ -176,8 +176,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			lastLocation = mrX.location();
 		}
 
-		currentRound += 1;
 		revealRound = rounds.get(currentRound);
+		currentRound += 1;
 		startRound();
 		mrX.location(move2.destination());
 		mrX.removeTicket(move2.ticket());
