@@ -25,6 +25,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 
 	private List<Boolean> rounds;
 	private Graph<Integer, Transport> graph;
+	private ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
 	private List<ScotlandYardPlayer> players = new ArrayList<>();
 	private int currentPlayer = 0;
 	private int currentRound = ScotlandYardView.NOT_STARTED;
@@ -43,7 +44,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		if(mrX.colour != BLACK) throw new IllegalArgumentException("Mr. X should be black!");
 
 		//Putting the player configurations in a temporary list and check on a loop
-		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
 		for(PlayerConfiguration player : restOfTheDetectives)
 			configurations.add(requireNonNull(player));
 		configurations.add(0, firstDetective);
@@ -69,31 +69,20 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 				throw new IllegalArgumentException("Duplicate colour!");
 			colourSet.add(player.colour);
 		}
-		checkTickets(firstDetective, mrX, restOfTheDetectives);
+		checkTickets();
 	}
 
 	//Method to check whether all ticket types exist and assigning respective tickets to players
-	public void checkTickets(PlayerConfiguration firstDetective, PlayerConfiguration mrX, PlayerConfiguration... restOfTheDetectives){
-		List<PlayerConfiguration> detectives = new ArrayList<>();
-
-		if(!firstDetective.tickets.containsKey(SECRET) || !firstDetective.tickets.containsKey(DOUBLE) || !firstDetective.tickets.containsKey(TAXI) || !firstDetective.tickets.containsKey(UNDERGROUND) || !firstDetective.tickets.containsKey(BUS))
-			throw new IllegalArgumentException("error");
-
-		if(firstDetective.tickets.get(SECRET) != 0 || firstDetective.tickets.get(DOUBLE) != 0 )
-			throw new IllegalArgumentException("error!");
-
-		for(PlayerConfiguration rest : restOfTheDetectives){
-			detectives.add(requireNonNull(rest));
-			if(!rest.tickets.containsKey(SECRET) || !rest.tickets.containsKey(DOUBLE) || !rest.tickets.containsKey(TAXI) || !rest.tickets.containsKey(UNDERGROUND) || !rest.tickets.containsKey(BUS))
-				throw new IllegalArgumentException("error");
-
-			if(rest.tickets.get(SECRET) != 0 || rest.tickets.get(DOUBLE) != 0 )
-				throw new IllegalArgumentException("error!");
+	public void checkTickets(){
+		for(PlayerConfiguration p : configurations){
+			for(Ticket t : Ticket.values()){
+				if(!p.tickets.containsKey(t)) throw new IllegalArgumentException("Player does not have respective tickets!");
+			}
+			if(p.colour.isDetective()){
+				if(p.tickets.get(DOUBLE) != 0 || p.tickets.get(SECRET) != 0) throw new IllegalArgumentException("Detectives should not contain these tickets!");
+			}
 		}
-		if(!mrX.tickets.containsKey(TAXI) || !mrX.tickets.containsKey(BUS) || !mrX.tickets.containsKey(UNDERGROUND) || !mrX.tickets.containsKey(SECRET) || !mrX.tickets.containsKey(DOUBLE))
-			throw new IllegalArgumentException("MrX must have all tickets");
 	}
-
 	//Registering the spectators (not null)
 	@Override
 	public void registerSpectator(Spectator spectator) {
