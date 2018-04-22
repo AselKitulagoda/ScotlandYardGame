@@ -83,6 +83,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			}
 		}
 	}
+
 	//Registering the spectators (not null)
 	@Override
 	public void registerSpectator(Spectator spectator) {
@@ -105,89 +106,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 			if(colour == x.colour()) return x;
 		}
 		throw new IllegalArgumentException("colour not found!");
-	}
-
-	//MoveVisitor method for a Pass Move
-	@Override
-	public void visit(PassMove move){
-		moveMade(move);
-	}
-
-	//MoveVisitor method for a Ticket Move (single move)
-	@Override
-	public void visit(TicketMove move){
-		ScotlandYardPlayer p = playerFromColour(move.colour());
-		ScotlandYardPlayer mrX = playerFromColour(BLACK);
-		p.location(move.destination());
-		p.removeTicket(move.ticket());
-
-		if(p.isDetective()) mrX.addTicket(move.ticket());
-
-		Move hiddenMove = move;
-
-		if(move.colour().isMrX()) {
-
-			if (!rounds.get(currentRound)) {
-				hiddenMove = new TicketMove(BLACK, move.ticket(), lastLocation);
-			}
-
-			else lastLocation = move.destination();
-			startRound();
-		}
-		moveMade(hiddenMove);
-	}
-
-	//MoveVisitor method for a Double Move (only for mrX)
-	@Override
-	public void visit(DoubleMove move){
-
-		ScotlandYardPlayer mrX = playerFromColour(BLACK);
-		TicketMove move1 = move.firstMove();
-		TicketMove move2 = move.secondMove();
-		mrX.removeTicket(DOUBLE);
-
-		boolean revealRound = rounds.get(currentRound);
-
-		if(!revealRound && !rounds.get(currentRound + 1)){ //checking whether current round and round after are hidden rounds
-			moveMade(new DoubleMove(BLACK, move1.ticket(), lastLocation, move2.ticket(), lastLocation));
-		}
-		else if (revealRound && !rounds.get(currentRound + 1)) { //checking whether the current round is reveal and the round after is hidden
-			moveMade(new DoubleMove(BLACK, move1.ticket(), move1.destination(), move2.ticket(), move1.destination()));
-		}
-		else if (!revealRound && rounds.get(currentRound + 1)){ //checking whether the current round is hidden but the round after is reveal
-			moveMade(new DoubleMove(BLACK, move1.ticket(), lastLocation, move2.ticket(), move2.destination()));
-		}
-		else {
-			moveMade(move);
-		}
-
-		mrX.location(move1.destination());
-		mrX.removeTicket(move1.ticket());
-
-		Move hiddenMove = move1;
-
-		if(move.colour().isMrX()) {
-			if (!rounds.get(currentRound)) {
-				hiddenMove = new TicketMove(BLACK, move1.ticket(), lastLocation);
-			}
-			else lastLocation = move1.destination();
-		}
-		startRound();
-		moveMade(hiddenMove);
-
-		mrX.location(move2.destination());
-		mrX.removeTicket(move2.ticket());
-
-		hiddenMove = move2;
-
-		if(move.colour().isMrX()) {
-			if (!rounds.get(currentRound)) {
-				hiddenMove = new TicketMove(BLACK, move2.ticket(), lastLocation);
-			}
-			else lastLocation = move2.destination();
-		}
-		startRound();
-		moveMade(hiddenMove);
 	}
 
 	//Method to create all possible moves from a given location for a colour. (Does not check if valid)
@@ -274,25 +192,107 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 		return true;
 	}
 
+	//MoveVisitor method for a Pass Move
+	@Override
+	public void visit(PassMove move){
+		moveMade(move);
+	}
+
+	//MoveVisitor method for a Ticket Move (single move)
+	@Override
+	public void visit(TicketMove move){
+		ScotlandYardPlayer p = playerFromColour(move.colour());
+		ScotlandYardPlayer mrX = playerFromColour(BLACK);
+		p.location(move.destination());
+		p.removeTicket(move.ticket()); //removes the detective's ticket after move has been made
+
+		if(p.isDetective()) mrX.addTicket(move.ticket()); //adding the detective's ticket to mrX's pile of tickets
+
+		Move hiddenMove = move; //setting the hidden move to the move if it is not a reveal round
+
+		if(move.colour().isMrX()) {
+
+			if (!rounds.get(currentRound)) {
+				hiddenMove = new TicketMove(BLACK, move.ticket(), lastLocation); //setting the hidden move to a move showing Mr X's last known location
+			}
+			else lastLocation = move.destination(); //updates Mr X's last known location to the move's destination if its a reveal round
+			startRound(); //updates the spectators telling them the round has started
+		}
+		moveMade(hiddenMove);
+	}
+
+	//MoveVisitor method for a Double Move (only for mrX)
+	@Override
+	public void visit(DoubleMove move){
+
+		ScotlandYardPlayer mrX = playerFromColour(BLACK);
+		TicketMove move1 = move.firstMove();
+		TicketMove move2 = move.secondMove();
+		mrX.removeTicket(DOUBLE); //removing the double move ticket from Mr X
+
+		boolean revealRound = rounds.get(currentRound);
+
+		if(!revealRound && !rounds.get(currentRound + 1)){ //checking whether current round and round after are hidden rounds
+			moveMade(new DoubleMove(BLACK, move1.ticket(), lastLocation, move2.ticket(), lastLocation)); //if none are reveal rounds, show the spectators and players, the last location
+		}
+		else if (revealRound && !rounds.get(currentRound + 1)) { //checking whether the current round is reveal and the round after is hidden
+			moveMade(new DoubleMove(BLACK, move1.ticket(), move1.destination(), move2.ticket(), move1.destination()));
+		}
+		else if (!revealRound && rounds.get(currentRound + 1)){ //checking whether the current round is hidden but the round after is reveal
+			moveMade(new DoubleMove(BLACK, move1.ticket(), lastLocation, move2.ticket(), move2.destination()));
+		}
+		else {
+			moveMade(move); //updates the spectators telling them the move has been made
+		}
+
+		mrX.location(move1.destination()); //setting Mr X's location to the first move's destination
+		mrX.removeTicket(move1.ticket()); //removing the first move's ticket after making a move
+
+		Move hiddenMove = move1; //setting the first move to a hidden move
+
+		if(move.colour().isMrX()) {
+			if (!revealRound) { //checking whether the current is a reveal round
+				hiddenMove = new TicketMove(BLACK, move1.ticket(), lastLocation); //updating the hidden move to the single move made, showing the players and spectators the last known location
+			}
+			else lastLocation = move1.destination(); //sets Mr X's location to the new destination (after the first move)
+		}
+		startRound(); //starting the round
+		moveMade(hiddenMove); //updating the spectators that the hidden move has been made
+
+		mrX.location(move2.destination()); //setting Mr X's location to the second move's destination
+		mrX.removeTicket(move2.ticket()); //removing the second move's ticket after making a move
+
+		hiddenMove = move2; //setting the second move to a hidden move
+
+		if(move.colour().isMrX()) {
+			if (!rounds.get(currentRound)) { //checking whether the current is a reveal round
+				hiddenMove = new TicketMove(BLACK, move2.ticket(), lastLocation);
+			}
+			else lastLocation = move2.destination(); //sets Mr X's location to the new destination (after the second move)
+		}
+		startRound(); //starting the round
+		moveMade(hiddenMove); //updating the spectators that the hidden move has been made
+	}
+
 	@Override
 	public void accept(Move move) {
-		currentPlayer = (currentPlayer + 1) % players.size();
+		currentPlayer = (currentPlayer + 1) % players.size();// increments aswell as resets the current player if it goes out of bounds in the players list
 		requireNonNull(move);
 
-		if (!validMove(move.colour()).contains(move)) throw new IllegalArgumentException("Incorrect move!");
+		if (!validMove(move.colour()).contains(move)) throw new IllegalArgumentException("Incorrect move!");// throws if valid moves does not contain the move
 
-		move.visit(this);
+		move.visit(this);// calls visit on the object itself
 
 		if(!isGameOver()){
-			if(currentPlayer > 0) playMove();
+			if(currentPlayer > 0) playMove(); // if game isnt over move is played
 			else rotationComplete();
 		}
-		else returnWinningPlayers();
+		else returnWinningPlayers();// returns winning players if game is won
 	}
 
 	private void startRound(){
-		currentRound += 1;
-		for(Spectator s : spectators) s.onRoundStarted(this, currentRound);
+		currentRound += 1; //increments round before a move has been made
+		for(Spectator s : spectators) s.onRoundStarted(this, currentRound);// calling move made on spectators
 	}
 
 	private void moveMade(Move move){
@@ -310,33 +310,33 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	@Override
 	public void startRotate() {
 
-		if(isGameOver()) throw new IllegalStateException("Game is over!");
+		if(isGameOver()) throw new IllegalStateException("Game is over!"); //throws if game over conditions has been met
 		else {
-			currentPlayer = 0;
+			currentPlayer = 0; //resets current player to zero if round is complete
 			ScotlandYardPlayer mrX = playerFromColour(BLACK);
-			mrX.player().makeMove(this, mrX.location(), validMove(BLACK), this);
+			mrX.player().makeMove(this, mrX.location(), validMove(BLACK), this); //calls make move on MrX
 		}
 	}
 
-	private void playMove(){
+	private void playMove(){ // makes a move for a detective
 		ScotlandYardPlayer p = playerFromColour(getCurrentPlayer());
 		p.player().makeMove(this, p.location(), validMove(p.colour()), this);
 	}
 
 	@Override
-	public Collection<Spectator> getSpectators() {
+	public Collection<Spectator> getSpectators() { //returns the list of spectators as added above
 		return Collections.unmodifiableCollection(spectators);
 	}
 
 	@Override
-	public List<Colour> getPlayers() {
+	public List<Colour> getPlayers() { // returns the list of the players' colours
 		List<Colour> colours = new ArrayList<>();
 		for(ScotlandYardPlayer player : players) colours.add(player.colour());
 		return Collections.unmodifiableList(colours);
 	}
 
 	@Override
-	public Set<Colour> getWinningPlayers() {
+	public Set<Colour> getWinningPlayers() { //returns the set of winning players' colours based on the winning conditions
 		Set<Colour> winner = new HashSet<>();
 		List<Colour> allPlayers = getPlayers();
 
@@ -349,7 +349,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	}
 
 	@Override
-	public Optional<Integer> getPlayerLocation(Colour colour) {
+	public Optional<Integer> getPlayerLocation(Colour colour) { //returns the player's location based on the round. returns Mr X's last known location. Returns empty if player doesn't exist
 		for(ScotlandYardPlayer player : players) {
 			if (colour == player.colour()) {
 				if (player.isDetective())
@@ -362,7 +362,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	}
 
 	@Override
-	public Optional<Integer> getPlayerTickets(Colour colour, Ticket ticket) {
+	public Optional<Integer> getPlayerTickets(Colour colour, Ticket ticket) { //returns the player's ticket count. Returns empty if player doesn't exist
 		for(ScotlandYardPlayer player : players){
 			if(colour == player.colour()){
 				if(player.tickets().containsKey(ticket))
@@ -373,26 +373,20 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move>, Move
 	}
 
 	@Override
-	public boolean isGameOver() {
+	public boolean isGameOver() { //returns true if winning conditions are met
 		if(roundsAreOver() || mrXIsCaught() || mrXIsStuck() || detectivesAreStuck()) return true;
 		else return false;
 	}
 
 	@Override
-	public Colour getCurrentPlayer() {
-		return getPlayers().get(currentPlayer);
-	}
+	public Colour getCurrentPlayer() { return getPlayers().get(currentPlayer); } //returns the current player
 
 	@Override
-	public int getCurrentRound() {
-		return currentRound;
-	}
+	public int getCurrentRound() { return currentRound;	} // returns the current round
 
 	@Override
-	public List<Boolean> getRounds() { return Collections.unmodifiableList(rounds); }
+	public List<Boolean> getRounds() { return Collections.unmodifiableList(rounds); } //returns the list of rounds (boolean)
 
 	@Override
-	public Graph<Integer, Transport> getGraph() {
-		return new ImmutableGraph<>(graph);
-	}
+	public Graph<Integer, Transport> getGraph() { return new ImmutableGraph<>(graph); } //returns the graph (board) of the game
 }
